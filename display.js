@@ -10,6 +10,7 @@ const Display = function(canvas) {
   
 
     this.tile_sheet = new Display.TileSheet(16,22);
+    this.player_sheet = new Display.TileSheet(16,4);
     
     this.drawMap = function(map, columns) {
 
@@ -27,12 +28,21 @@ const Display = function(canvas) {
       };
 
     this.drawPlayers = (players) => {
-
+        
         for(let curr_player of players.players){
+            let value = curr_player.animator.frame_value
+            let source_x =           (value % curr_player.animator.sprite_sheet.columns) * this.tile_sheet.tile_size;
+            let source_y = Math.floor(value / curr_player.animator.sprite_sheet.columns) * this.tile_sheet.tile_size;
+            let destination_x = Math.floor(curr_player.x)
+            let destination_y = curr_player.y
 
-            this.buffer.fillStyle = curr_player.color;
-            this.buffer.fillRect(Math.floor(curr_player.x), Math.floor(curr_player.y), curr_player.width, curr_player.height);
+          console.log(value)
+
+            this.buffer.drawImage(this.player_sheet.image, source_x, source_y, this.tile_sheet.tile_size, this.tile_sheet.tile_size, destination_x, destination_y-20, this.tile_sheet.tile_size, this.tile_sheet.tile_size);
         }
+        
+
+       
     }
 
     this.drawLevels = (levels) => {

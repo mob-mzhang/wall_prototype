@@ -9,7 +9,7 @@ const Game = function() {
     this.world = {
         background_color:"rgba(40,48,56,0.25)",
 
-        friction:0.7,
+        friction:0.95,
         gravity:1,
 
         columns:30,
@@ -45,7 +45,6 @@ const Game = function() {
 
         collideLevels: function(object){
 
-            console.log(object.y)
             if (object.y + object.height > this.height) { object.jumping = false; object.y = this.height - object.height; object.velocity_y = 0; return;}
             for(let curr_level of this.levels.levels){
                 if (object.y + object.height > curr_level.y) { object.jumping = false; object.y = curr_level.y - object.height; object.velocity_y = 0;break; } 
@@ -83,6 +82,7 @@ const Game = function() {
                 curr_player.velocity_y += this.gravity
 
                 curr_player.update();
+                curr_player.updateAnimation();
 
                 curr_player.velocity_x *= this.friction;
                 curr_player.velocity_y *= this.friction;
@@ -99,7 +99,7 @@ const Game = function() {
 
     };
 
-    console.log(this.world.height)
+
 
   
     this.update = function() {
@@ -125,6 +125,13 @@ const Game = function() {
     this.velocity_y = 0;
     this.x = x_start;
     this.y = y_start;
+    this.direction_x = 0;
+    this.animator = new Game.Player.Animator(new Game.Player.FrameSet(16,4), [0, 1, 2, 3], 10);
+    this.frame_sets = {
+        "move-left" : [0, 1, 2, 3],
+        "move-right": [4, 5, 6, 7],
+        "idle":[8,9,10,11]
+      }
   }
 
   Game.Player.prototype = {
@@ -150,18 +157,70 @@ const Game = function() {
 
 
 
-    moveLeft: function() {this.velocity_x -=1},
-    moveRight: function() {this.velocity_x += 1;},
+    moveLeft: function() {
+        this.direction_x = -1; 
+        this.velocity_x -=5
+    },
+    
+    moveRight: function() {
+        this.direction_x = 1;
+        this.velocity_x += 5;
+    },
 
     update:function() {
-
         this.x += this.velocity_x;
         this.y += this.velocity_y;
 
+        if (Math.abs(this.velocity_x) <0.1){
+            this.direction_x = 0;
+        }
+
+    },
+
+    updateAnimation: function() {
+        
+        
+        if(this.direction_x>0) {
+            this.animator.changeFrameSet(this.frame_sets["move-left"],"loop");
+        }
+        else if(this.direction_x<0){
+            this.animator.changeFrameSet(this.frame_sets["move-right"],"loop");
+        }
+        else {
+            this.animator.changeFrameSet(this.frame_sets["idle"],"loop")
+        }       
+        
+
+        this.animator.animate();
     }
-
-
   }
+
+  Game.Player.Frame = function(index,width,height,offset_x,offset_y) {
+    this.index    = index;
+    this.width    = width;
+    this.height   = height;
+    this.offset_x = offset_x;
+    this.offset_y = offset_y;
+  }
+
+  Game.Player.Frame.prototype  = {constructor:Game.Player.Frame};
+
+  Game.Player.FrameSet = function(tile_size, columns) {
+
+    this.columns    = columns;
+    this.tile_size  = tile_size;
+  
+    let f = Game.Player.Frame;
+  
+    /* An array of all the frames in the tile sheet image. */
+    this.frames = [new f(8, 16, 16, 0, -2), new f(9, 16, 16, 0, -2), new f(10, 16, 16, 0, -2), new f(11, 16, 16, 0, -2), //idle
+                   new f(0, 16, 16, 0, -2), new f(1, 16, 16, 0, -2), new f(2, 16, 16, 0, -2), new f(3, 16, 16, 0, -2), // walk-right
+                   new f(4, 16, 16, 0, -2), new f(5, 16, 16, 0, -2), new f(6, 16, 16, 0, -2), new f(7, 16, 16, 0, -2) // walk-left
+                  ];
+  
+  };
+  
+  Game.Player.FrameSet.prototype = { constructor: Game.Player.FrameSet };
 
   Game.Players = function() {
     this.players = [];
@@ -184,7 +243,6 @@ const Game = function() {
     this.num_levels = 5;
     this.level_heights = new Array(11*16,8*16,5*16,2*16)
     for(let k = 5;k>1;k--){
-        console.log(this.level_heights[k])
         this.newLevel((game_height - this.level_heights[k-2]))
     }
   }
@@ -207,6 +265,81 @@ const Game = function() {
 
   Game.Level.prototype = {
     constructor:Game.Level
+  }
+
+
+
+  Game.Player.Animator = function(sprite_sheet, frame_set,delay){
+
+
+    this.count       = 0;
+    this.delay       = (delay >= 1) ? delay : 1;
+    this.frame_set   = frame_set;
+    this.frame_index = 0;
+    this.sprite_sheet = sprite_sheet
+    this.frame_value = sprite_sheet.frames[0].index;
+    this.mode        = "loop";
+
+  }
+
+
+  Game.Player.Animator.prototype = {
+    constructor: Game.Player.Animator,
+
+    animate:function() {
+
+        switch(this.mode) {
+
+            case "loop" : this.loop(); break;
+            case "pause":              break;
+      
+        }
+    },
+
+    changeFrameSet: function(frame_set, mode, delay = 10, frame_index = 0) {
+
+        if (this.frame_set === frame_set) { 
+            
+            return; 
+        }
+
+    
+        this.count       = 0;
+        this.delay       = delay;
+        this.frame_set   = frame_set;
+        this.frame_index = frame_index;
+        this.frame_value = frame_set[frame_index];
+        this.mode        = mode;
+
+
+    
+      },
+
+    loop:function() {
+
+        this.count ++;
+
+        while(this.count > this.delay) {
+            console.log("frame_set")
+            console.log(this.frame_set)
+            
+
+            this.count -= this.delay;
+
+            this.frame_index = (this.frame_index < this.frame_set.length - 1) ? this.frame_index + 1 : 0;
+            console.log("frame_index")
+            console.log(this.frame_index)
+
+            this.frame_value = this.frame_set[this.frame_index];
+            console.log("frame_value")
+            console.log(this.frame_value)
+           
+
+ 
+        }
+
+    },
+
   }
 
 

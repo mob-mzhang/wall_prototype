@@ -30,11 +30,11 @@ window.addEventListener("load", function(event) {
   
     var update = function() {
 
-        if(controller.space.active) {game.world.players.newPlayer(Math.random()*game.world.width,Math.random()*game.world.height);}
+        if(controller.space.active) {game.world.players.newPlayer(Math.random()*game.world.width,(1/2 + Math.random())*game.world.height*2/3);}
   
         game.update();
-  
-    };
+    
+    }; 
 
     var keyDownUp = function (event) {
         controller.keyDownUp(event.type, event.keyCode);
@@ -87,5 +87,6 @@ window.addEventListener("load", function(event) {
            
 
       display.tile_sheet.image.src = "./assets/mod_terrain.png"
+      display.player_sheet.image.src = "./assets/wolf.png"
   
   });
